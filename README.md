@@ -7,4 +7,4 @@
 This tool demonstrates how AI can identify patterns in appointment data (like lead time and age) to predict the likelihood of a patient missing their appointment.
 
 ### Data Source
-This model is trained on the publicly available "Medical Appointment No Shows" dataset (Kaggle).
+This model is trained on the publicly available "Medical Appointment No Shows" dataset (Kaggle). 
