@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Network No-Show Predictor</title>
+    <style>
+        body { font-family: sans-serif; max-width: 700px; margin: 20px auto; padding: 20px; background-color: #f0f2f6; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2c3e50; }
+        .disclaimer { background: #fff3cd; color: #856404; padding: 10px; font-size: 0.9em; margin-bottom: 20px; border-radius: 5px; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
+        input[type=range] { width: 100%; margin: 5px 0; }
+        .row { display: flex; justify-content: space-between; flex-wrap: wrap; }
+        .col { width: 48%; }
+        button { background: #ff4b4b; color: white; width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 1.1em; cursor: pointer; margin-top: 25px; }
+        button:hover { background: #ff3333; }
+        #result { margin-top: 20px; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2em; border-radius: 8px; display: none; }
+        .low { background: #d4edda; color: #155724; }
+        .med { background: #fff3cd; color: #856404; }
+        .high { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="disclaimer">⚠️ <strong>Educational Demo:</strong> Uses a simulated Neural Network based on public data. Not for clinical use.</div>
+    <h2>🏥 No-Show Predictor (Neural Net)</h2>
+
+    <label>Lead Time: <span id="lead_val">14</span> days</label>
+    <input type="range" id="lead" min="0" max="120" value="14" oninput="document.getElementById('lead_val').innerText=this.value">
+
+    <label>Age: <span id="age_val">30</span> years</label>
+    <input type="range" id="age" min="0" max="100" value="30" oninput="document.getElementById('age_val').innerText=this.value">
+
+    <div class="row" style="margin-top: 15px;">
+        <div class="col">
+            <label><input type="checkbox" id="sms"> Received SMS</label>
+            <label><input type="checkbox" id="scholarship"> Scholarship</label>
+            <label><input type="checkbox" id="gender"> Male Gender</label>
+        </div>
+        <div class="col">
+            <label><input type="checkbox" id="hyper"> Hypertension</label>
+            <label><input type="checkbox" id="diabetes"> Diabetes</label>
+            <label><input type="checkbox" id="alcohol"> Alcoholism</label>
+        </div>
+    </div>
+
+    <button onclick="predict()">Run Neural Network</button>
+    <div id="result"></div>
+</div>
+
+<script>
+    // --- YOUR TRAINED WEIGHTS ---
+    const W1 = [[-4.458304827642382, -18.85915045864661, 2.202407331685105, -20.167622348974014], [0.06532066649966933, -0.14062807537049368, -0.9924783533478315, 0.10770624957860234], [0.02645570665025102, 0.005146715712911108, 0.27419083796870863, -0.008127208384692922], [0.5666057752101153, 0.041880421920630455, -0.040866257897956594, -0.05792017710044905], [-0.011811736153796576, 0.013725754658603252, 0.1358261790783296, -0.004273473487538236], [0.13399695011699303, 0.010176595164926572, 0.49971157654016995, 0.03390106447012083], [0.0361499221001792, 0.039823745629542405, -0.2292761486025757, 0.06603462929392265], [0.04146374739465665, -0.0027305234092592622, -0.028320154556472174, -0.021485585380006476]];
+    const B1 = [-0.4715724479788804, 0.14370215446932166, 0.8031325087199122, 0.0730019669823157];
+    const W2 = [[-1.4266830616933037], [-9.075152826093177], [1.027516992292607], [-10.467174213445656]];
+    const B2 = [-1.2854808565023266];
+    // ----------------------------
+
+    function predict() {
+        // 1. GATHER INPUTS (Normalized exactly like Python script)
+        let inputs = [
+            parseInt(document.getElementById('lead').value) / 365.0, // Lead_Time
+            parseInt(document.getElementById('age').value) / 100.0,  // Age
+            document.getElementById('scholarship').checked ? 1 : 0,
+            document.getElementById('hyper').checked ? 1 : 0,
+            document.getElementById('diabetes').checked ? 1 : 0,
+            document.getElementById('alcohol').checked ? 1 : 0,
+            document.getElementById('sms').checked ? 1 : 0,
+            document.getElementById('gender').checked ? 1 : 0
+        ];
+
+        // 2. FORWARD PASS
+        // Layer 1 (Hidden)
+        let hidden = [0, 0, 0, 0]; 
+        for (let i = 0; i < 4; i++) { 
+            let sum = 0;
+            // Matrix multiplication: Input * W1
+            for (let j = 0; j < 8; j++) sum += inputs[j] * W1[j][i];
+            sum += B1[i]; // Add Bias
+            hidden[i] = Math.max(0, sum); // ReLU Activation
+        }
+
+        // Layer 2 (Output)
+        let sumOut = 0;
+        // Matrix multiplication: Hidden * W2
+        for (let i = 0; i < 4; i++) sumOut += hidden[i] * W2[i][0];
+        sumOut += B2[0]; // Add Bias
+
+        // Sigmoid Activation (Probability)
+        let prob = 1 / (1 + Math.exp(-sumOut));
+        let pct = Math.round(prob * 100);
+
+        // 3. DISPLAY
+        let res = document.getElementById('result');
+        res.style.display = 'block';
+        res.innerText = "No-Show Probability: " + pct + "%";
+        
+        // Dynamic styling
+        res.className = ''; // clear classes
+        if (pct < 30) {
+            res.classList.add('low');
+            res.innerHTML += "<br><small>Analysis: Low Risk</small>";
+        } else if (pct < 70) {
+            res.classList.add('med');
+            res.innerHTML += "<br><small>Analysis: Medium Risk</small>";
+        } else {
+            res.classList.add('high');
+            res.innerHTML += "<br><small>Analysis: High Risk</small>";
+        }
+    }
+</script>
+
+</body>
+</html>
